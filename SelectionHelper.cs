@@ -11,8 +11,8 @@ namespace Projects.Utils
     public static class SelectionHelper
     {
         /// <summary>
-        /// Классический вариант: возвращает Revit-элементы как есть.
-        /// Оставлен для обратной совместимости.
+        /// Выбирает элементы типа T через интерактивный пикер Revit.
+        /// Возвращает null если пользователь отменил выбор (Escape).
         /// </summary>
         public static List<T> PickElements<T>(UIDocument uidoc, string message)
             where T : Element
@@ -25,35 +25,6 @@ namespace Projects.Utils
                 return refs
                     .Select(r => uidoc.Document.GetElement(r.ElementId))
                     .Cast<T>()
-                    .ToList();
-            }
-            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Основной вариант: выбирает элементы типа T, немедленно конвертирует
-        /// каждый через <paramref name="converter"/> и возвращает List&lt;TResult&gt;.
-        ///
-        /// Revit-объекты живут только внутри этого метода —
-        /// наружу выходят только structs (decimal-координаты).
-        /// </summary>
-        public static List<TResult> PickElements<T, TResult>(
-            UIDocument uidoc,
-            string message,
-            Func<T, TResult> converter)
-            where T : Element
-        {
-            try
-            {
-                IList<Reference> refs = uidoc.Selection.PickObjects(
-                    ObjectType.Element, new TypeSelectionFilter<T>(), message);
-
-                return refs
-                    .Select(r => (T)uidoc.Document.GetElement(r.ElementId))
-                    .Select(converter)
                     .ToList();
             }
             catch (Autodesk.Revit.Exceptions.OperationCanceledException)

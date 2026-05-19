@@ -5,6 +5,7 @@ using Autodesk.Revit.UI;
 using MEP_Data.Path_Finder;
 using Projects.Utils;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Projects
 {
@@ -17,20 +18,19 @@ namespace Projects
             Document doc = uidoc.Document;
 
             // ── 1. ГРАНИЦА ВХОДА ────────────────────────────────────────────────────
-            List<PipeData> selected = SelectionHelper.PickElements<Pipe, PipeData>(
-                uidoc,
-                "Выберите ровно 2 трубы",
-                pipe => PipeUtils.ToPipeData(pipe));
+            List<Pipe> rawPipes = SelectionHelper.PickElements<Pipe>(uidoc, "Выберите ровно 2 трубы");
 
             // ── 2. Валидация ────────────────────────────────────────────────────────
-            if (selected == null)
+            if (rawPipes == null)
                 return Result.Cancelled;
 
-            if (selected.Count != 2)
+            if (rawPipes.Count != 2)
             {
                 TaskDialog.Show("Ошибка", "Нужно выбрать ровно 2 трубы.");
                 return Result.Failed;
             }
+
+            List<PipeData> selected = rawPipes.Select(PipeUtils.ToPipeData).ToList();
 
             // ── 3. Логика на decimal ────────────────────────────────────────────────
             myPipe_numeric pipe1 = selected[0].Numeric;
@@ -53,7 +53,7 @@ namespace Projects
 
             Node corner = manager.Grid[0, 0, 0];
 
-            
+
 
             // ── 4. ГРАНИЦА ВЫХОДА ───────────────────────────────────────────────────
             using (Transaction tx = new Transaction(doc, "Лесенка X→Y→Z"))
@@ -110,19 +110,19 @@ namespace Projects
                     $"Точка 2: {to}\n" +
                     $"Расстояние: {distMm:F2} мм");
 
+                //---------------------- Test -----------------
+                //diameter = 0.05249343832021;
+                //Pipe pipeX1 = Pipe.Create(doc, cat1.system_type_Id, cat1.type_Id, cat1.level_Id, new XYZ(p1.X, p2.Y, p2.Z), new XYZ(p2.X, p2.Y, p2.Z));
+                //pipeX1.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.Set(diameter);  //diameter = 0.05249343832021
 
-                diameter = 0.05249343832021;
-                Pipe pipeX1 = Pipe.Create(doc, cat1.system_type_Id, cat1.type_Id, cat1.level_Id, new XYZ(p1.X, p2.Y, p2.Z), new XYZ(p2.X, p2.Y, p2.Z));
-                pipeX1.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.Set(diameter);  //diameter = 0.05249343832021
+                //Pipe pipeX2 = Pipe.Create(doc, cat1.system_type_Id, cat1.type_Id, cat1.level_Id, new XYZ(p2.X, p1.Y, p2.Z), new XYZ(p2.X, p2.Y, p2.Z));
+                //pipeX2.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.Set(diameter);  //diameter = 0.05249343832021
 
-                Pipe pipeX2 = Pipe.Create(doc, cat1.system_type_Id, cat1.type_Id, cat1.level_Id, new XYZ(p2.X, p1.Y, p2.Z), new XYZ(p2.X, p2.Y, p2.Z));
-                pipeX2.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.Set(diameter);  //diameter = 0.05249343832021
+                //Pipe pipeX3 = Pipe.Create(doc, cat1.system_type_Id, cat1.type_Id, cat1.level_Id, new XYZ(p1.X, p1.Y, p2.Z), new XYZ(p2.X, p1.Y, p2.Z));
+                //pipeX3.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.Set(diameter);  //diameter = 0.05249343832021
 
-                Pipe pipeX3 = Pipe.Create(doc, cat1.system_type_Id, cat1.type_Id, cat1.level_Id, new XYZ(p1.X, p1.Y, p2.Z), new XYZ(p2.X, p1.Y, p2.Z));
-                pipeX3.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.Set(diameter);  //diameter = 0.05249343832021
-
-                Pipe pipeX4 = Pipe.Create(doc, cat1.system_type_Id, cat1.type_Id, cat1.level_Id, new XYZ(p1.X, p1.Y, p2.Z), new XYZ(p1.X, p2.Y, p2.Z));
-                pipeX4.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.Set(diameter);  //diameter = 0.05249343832021
+                //Pipe pipeX4 = Pipe.Create(doc, cat1.system_type_Id, cat1.type_Id, cat1.level_Id, new XYZ(p1.X, p1.Y, p2.Z), new XYZ(p1.X, p2.Y, p2.Z));
+                //pipeX4.get_Parameter(BuiltInParameter.RBS_PIPE_DIAMETER_PARAM)?.Set(diameter);  //diameter = 0.05249343832021
 
                 // ── Слияние на граничных стыках ─────────────────────────────────────
                 PipeUtils.TryMergeAsContinuation(doc, doc.GetElement(cat1.pipe_Id) as Pipe, pipeA, from);
